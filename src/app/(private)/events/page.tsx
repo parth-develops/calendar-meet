@@ -14,6 +14,9 @@ export default async function EventsPage() {
         orderBy: ({ createdAt }, { desc }) => desc(createdAt),
     })
 
+    console.log(events);
+    
+
     return (
         <>
             <div className="flex gap-4 items-baseline">
