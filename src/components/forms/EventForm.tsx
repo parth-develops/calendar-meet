@@ -23,8 +23,7 @@ export default function EventForm() {
     })
 
     async function onSubmit(values: z.infer<typeof eventFormSchema>) {
-        console.log(values);
-        await createEvent(values)
+        await createEvent(values);
     }
 
     return (

@@ -10,13 +10,13 @@ import { z } from "zod";
 
 export async function createEvent(unsafeData: z.infer<typeof eventFormSchema>) {
     const { userId } = await auth();
-    const { success, data, } = eventFormSchema.safeParse(unsafeData)
+    const { success, data } = eventFormSchema.safeParse(unsafeData)
 
     if (!success || userId === null) {
         return { error: true }
     }
 
-    db.insert(EventTable).values({ ...data, clerkUserId: userId })
+    await db.insert(EventTable).values({ ...data, clerkUserId: userId })
 
     redirect("/events")
 }

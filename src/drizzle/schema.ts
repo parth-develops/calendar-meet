@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import { boolean, index, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 const createdAt = timestamp("createdAt").notNull().defaultNow();
-const updatedAt = timestamp("createdAt").notNull().defaultNow().$onUpdate(() => new Date());
+const updatedAt = timestamp("updatedAt").notNull().defaultNow().$onUpdate(() => new Date());
 
 export const EventTable = pgTable("events", {
     id: uuid("id").primaryKey().defaultRandom(),
