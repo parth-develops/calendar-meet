@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/drizzle/db";
+import { formatEventDescription } from "@/lib/formatters";
 import { auth } from "@clerk/nextjs/server";
 import { CalendarPlus, CalendarRange } from "lucide-react";
 import Link from "next/link";
@@ -14,9 +16,6 @@ export default async function EventsPage() {
         orderBy: ({ createdAt }, { desc }) => desc(createdAt),
     })
 
-    console.log(events);
-    
-
     return (
         <>
             <div className="flex gap-4 items-baseline">
@@ -25,7 +24,13 @@ export default async function EventsPage() {
                     <Link href="/events/new"><CalendarPlus className="mr-2 size-6" /> New Event</Link>
                 </Button>
             </div>
-            {events.length > 0 ? <h1>Events</h1> : (
+            {events.length > 0 ? <div className="grid pag-4 grid-cols-[repeat(auto-fill,minmax(400px,1fr))]">
+                {
+                    events.map(event => (
+                        <EventCard key={event.id} {...event} />
+                    ))
+                }
+            </div> : (
                 <div className="flex flex-col items-center gap-4">
                     <CalendarRange className="size-16 mx-auto" />
                     You do not have any events yet. Create your first event to get
@@ -39,4 +44,31 @@ export default async function EventsPage() {
             )}
         </>
     )
+}
+
+type EventCardProps = {
+    id: string,
+    isActive: boolean,
+    name: string,
+    description: string | null,
+    durationInMinutes: number,
+    ClerkUserId: string
+}
+
+function EventCard({ id, isActive, name, description, durationInMinutes, ClerkUserId }: EventCardProps) {
+    return <Card>
+        <CardHeader>
+            <CardTitle>{name}</CardTitle>
+            <CardDescription>
+                {formatEventDescription(durationInMinutes)}
+            </CardDescription>
+            {
+                description != null && (
+                    <CardContent>
+
+                    </CardContent>
+                )
+            }
+        </CardHeader>
+    </Card>
 }
