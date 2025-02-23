@@ -1,5 +1,6 @@
+import CopyEventButton from "@/components/CopyEventButton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/drizzle/db";
 import { formatEventDescription } from "@/lib/formatters";
 import { auth } from "@clerk/nextjs/server";
@@ -24,7 +25,7 @@ export default async function EventsPage() {
                     <Link href="/events/new"><CalendarPlus className="mr-2 size-6" /> New Event</Link>
                 </Button>
             </div>
-            {events.length > 0 ? <div className="grid pag-4 grid-cols-[repeat(auto-fill,minmax(400px,1fr))]">
+            {events.length > 0 ? <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(400px,1fr))]">
                 {
                     events.map(event => (
                         <EventCard key={event.id} {...event} />
@@ -52,11 +53,11 @@ type EventCardProps = {
     name: string,
     description: string | null,
     durationInMinutes: number,
-    ClerkUserId: string
+    clerkUserId: string
 }
 
-function EventCard({ id, isActive, name, description, durationInMinutes, ClerkUserId }: EventCardProps) {
-    return <Card>
+function EventCard({ id, isActive, name, description, durationInMinutes, clerkUserId }: EventCardProps) {
+    return <Card className="flex flex-col">
         <CardHeader>
             <CardTitle>{name}</CardTitle>
             <CardDescription>
@@ -64,11 +65,15 @@ function EventCard({ id, isActive, name, description, durationInMinutes, ClerkUs
             </CardDescription>
             {
                 description != null && (
-                    <CardContent>
-
-                    </CardContent>
+                    <CardContent>{description}</CardContent>
                 )
             }
+            <CardFooter className="flex justify-end gap-2 mt-auto">
+                <CopyEventButton variant="outline" eventId={id} clerkUserId={clerkUserId} />
+                <Button asChild>
+                    <Link href={`/events/${id}/edit`}>Edit</Link>
+                </Button>
+            </CardFooter>
         </CardHeader>
     </Card>
 }
