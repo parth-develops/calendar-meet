@@ -12,11 +12,12 @@ import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { createEvent } from "@/server/actions/events";
 
+type EventType = { id: string, name: string, description?: string, durationInMinutes: number, isActive: boolean }
 
-export default function EventForm() {
+export default function EventForm({ event }: { event?: EventType }) {
     const form = useForm<z.infer<typeof eventFormSchema>>({
         resolver: zodResolver(eventFormSchema),
-        defaultValues: {
+        defaultValues: event ?? {
             isActive: true,
             durationInMinutes: 30
         }
