@@ -10,11 +10,15 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
-import { createEvent } from "@/server/actions/events";
+import { createEvent, deleteEvent, updateEvent } from "@/server/actions/events";
+import { AlertDialogTrigger, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogDescription, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
+import { useTransition } from "react";
 
 type EventType = { id: string, name: string, description?: string, durationInMinutes: number, isActive: boolean }
 
 export default function EventForm({ event }: { event?: EventType }) {
+    const [isDeletePending, startDeleteTransition] = useTransition();
+
     const form = useForm<z.infer<typeof eventFormSchema>>({
         resolver: zodResolver(eventFormSchema),
         defaultValues: event ?? {
@@ -24,7 +28,8 @@ export default function EventForm({ event }: { event?: EventType }) {
     })
 
     async function onSubmit(values: z.infer<typeof eventFormSchema>) {
-        const data = await createEvent(values);
+        const action = event == null ? createEvent : updateEvent.bind(null, event.id)
+        const data = await action(values);
 
         if (data?.error) {
             form.setError("root", {
@@ -100,6 +105,43 @@ export default function EventForm({ event }: { event?: EventType }) {
                     )}
                 />
                 <div className="flex gap-2 justify-end">
+                    {
+                        event && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant={"destructiveGhost"} disabled={isDeletePending || form.formState.isSubmitting}>
+                                        Delete
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    </AlertDialogHeader>
+                                    <AlertDialogDescription>
+                                        This action can{"'"}t be undone. It will permanently delete this event.
+                                    </AlertDialogDescription>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction className="text-destructive border border-destructive bg-white hover:bg-destructive hover:text-white" disabled={isDeletePending || form.formState.isSubmitting}
+                                            onClick={() => {
+                                                startDeleteTransition(async () => {
+                                                    const data = await deleteEvent(event.id);
+
+                                                    if (data?.error) {
+                                                        form.setError("root", {
+                                                            message: "There was an error deleting your event"
+                                                        })
+                                                    }
+                                                })
+                                            }}
+                                        >
+                                            Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )
+                    }
                     <Button type="button" asChild variant="outline">
                         <Link href="/events">Cancel</Link>
                     </Button>
