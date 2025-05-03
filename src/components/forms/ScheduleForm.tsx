@@ -3,18 +3,16 @@
 import { useForm } from "react-hook-form"
 import { z } from "zod";
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { Input } from "../ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Button } from "../ui/button";
-import Link from "next/link";
-import { Textarea } from "../ui/textarea";
-import { Switch } from "../ui/switch";
-import { createEvent, deleteEvent, updateEvent } from "@/server/actions/events";
-import { AlertDialogTrigger, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogDescription, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
-import { useTransition } from "react";
+import { createEvent, updateEvent } from "@/server/actions/events";
+import { Fragment } from "react";
 import { DAYS_OF_WEEK_IN_ORDER } from "@/data/constants";
 import { timeToInt } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { formatTimezoneOffset } from "@/lib/formatters";
+import { scheduleFormSchema } from "@/schema/schedule";
+import { Plus } from "lucide-react";
 
 type Availability = {
     startTime: string,
@@ -25,7 +23,6 @@ type Availability = {
 type ScheduleType = { timezone: string, availabilities: Availability[] }
 
 export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) {
-    const [isDeletePending, startDeleteTransition] = useTransition();
 
     const form = useForm<z.infer<typeof scheduleFormSchema>>({
         resolver: zodResolver(scheduleFormSchema),
@@ -61,7 +58,7 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                     name="timezone"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Event Name</FormLabel>
+                            <FormLabel>TImezone</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
@@ -73,102 +70,32 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                                         Intl.supportedValuesOf("timeZone").map(timezone => (
                                             <SelectItem key={timezone} value={timezone}>
                                                 {timezone}
+                                                {`(${formatTimezoneOffset(timezone)})`}
                                             </SelectItem>
                                         ))
                                     }
                                 </SelectContent>
                             </Select>
-                            <FormDescription>The name users will see when booking</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="durationInMinutes"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Duration</FormLabel>
-                            <FormControl>
-                                <Input type="number" {...field} />
-                            </FormControl>
-                            <FormDescription>In minutes</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                                <Textarea className="resize-none h-32" {...field} />
-                            </FormControl>
-                            <FormDescription>Optional description of the event</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="isActive"
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center gap-2">
-                                <FormLabel>Active</FormLabel>
-                                <FormControl>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <FormDescription>Inactive events will not be visible for users to book</FormDescription>
-                                <FormMessage />
-                            </div>
-                        </FormItem>
-                    )}
-                />
-                <div className="flex gap-2 justify-end">
+                <div className="grid grid-cols-[auto,1fr] gap-y-6 gap-x-4">
                     {
-                        event && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant={"destructiveGhost"} disabled={isDeletePending || form.formState.isSubmitting}>
-                                        Delete
+                        DAYS_OF_WEEK_IN_ORDER.map(dayOfWeek => (
+                            <Fragment key={dayOfWeek}>
+                                <div className="capitalize text-sm font-semibold">{dayOfWeek.substring(0, 3)}</div>
+                                <div className="flex flex-col gap-2">
+                                    <Button type="button" className="size-6 p-1" variant="outline" onClick={() => {}}>
+                                        <Plus className="size-full"/>
                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    </AlertDialogHeader>
-                                    <AlertDialogDescription>
-                                        This action can{"'"}t be undone. It will permanently delete this event.
-                                    </AlertDialogDescription>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction className="text-destructive border border-destructive bg-white hover:bg-destructive hover:text-white" disabled={isDeletePending || form.formState.isSubmitting}
-                                            onClick={() => {
-                                                startDeleteTransition(async () => {
-                                                    const data = await deleteEvent(event.id);
-
-                                                    if (data?.error) {
-                                                        form.setError("root", {
-                                                            message: "There was an error deleting your event"
-                                                        })
-                                                    }
-                                                })
-                                            }}
-                                        >
-                                            Delete
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )
+                                </div>
+                            </Fragment>
+                        ))
                     }
-                    <Button type="button" asChild variant="outline">
-                        <Link href="/events">Cancel</Link>
-                    </Button>
-                    <Button type="submit">
+                </div>
+                <div className="flex gap-2 justify-end">
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
                         Save
                     </Button>
                 </div>
