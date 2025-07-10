@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { formatTimezoneOffset } from "@/lib/formatters";
 import { scheduleFormSchema } from "@/schema/schedule";
 import { Plus } from "lucide-react";
+import { Input } from "../ui/input";
 
 type Availability = {
     startTime: string,
@@ -33,6 +34,13 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
             })
         }
     })
+
+    const { append: addAvailability, remove: removeAvailability, fields: availibilityFields } = useFieldArray({
+        name: "availabilities",
+        control: form.control,
+    })
+
+    const groupedAvailabilities = Object.groupBy(availibilityFields.map((field, index) => ({ ...field, index })), availibility => availibility.dayOfWeek)
 
     async function onSubmit(values: z.infer<typeof scheduleFormSchema>) {
         const action = event == null ? createEvent : updateEvent.bind(null, event.id)
@@ -86,9 +94,52 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                             <Fragment key={dayOfWeek}>
                                 <div className="capitalize text-sm font-semibold">{dayOfWeek.substring(0, 3)}</div>
                                 <div className="flex flex-col gap-2">
-                                    <Button type="button" className="size-6 p-1" variant="outline" onClick={() => {}}>
-                                        <Plus className="size-full"/>
+                                    <Button type="button" className="size-6 p-1" variant="outline"
+                                        onClick={() => {
+                                            addAvailability({
+                                                dayOfWeek, startTime: "09:00", endTime: "17:00",
+                                            })
+                                         }}
+                                    >
+                                        <Plus className="size-full" />
                                     </Button>
+                                    {groupedAvailabilities[dayOfWeek]?.map((field, labelIndex) => (
+                                        <div key={labelIndex} className="flex flex-col gap-1">
+                                            <div className="flex gap-2 items-center">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`availabilities.${field.index}.startTime`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl>
+                                                                <Input {...field} className="w-24" aria-label={`${dayOfWeek} Start Time ${labelIndex + 1}`} />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`availabilities.${field.index}.endTime`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl>
+                                                                <Input {...field} className="w-24" aria-label={`${dayOfWeek} End Time ${labelIndex + 1}`} />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <FormMessage>
+                                                {form.formState.errors.availabilities?.at?.(field.index)?.root?.message}
+                                            </FormMessage>
+                                            <FormMessage>
+                                                {form.formState.errors.availabilities?.at?.(field.index)?.startTime?.message}
+                                            </FormMessage>
+                                            <FormMessage>
+                                                {form.formState.errors.availabilities?.at?.(field.index)?.endTime?.message}
+                                            </FormMessage>
+                                        </div>
+                                    ))}
                                 </div>
                             </Fragment>
                         ))
