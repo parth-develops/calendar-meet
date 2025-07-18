@@ -5,15 +5,15 @@ import { z } from "zod";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Button } from "../ui/button";
-import { createEvent, updateEvent } from "@/server/actions/events";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { DAYS_OF_WEEK_IN_ORDER } from "@/data/constants";
 import { timeToInt } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { formatTimezoneOffset } from "@/lib/formatters";
 import { scheduleFormSchema } from "@/schema/schedule";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Input } from "../ui/input";
+import { saveSchedule } from "@/server/actions/schedule";
 
 type Availability = {
     startTime: string,
@@ -24,6 +24,7 @@ type Availability = {
 type ScheduleType = { timezone: string, availabilities: Availability[] }
 
 export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) {
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof scheduleFormSchema>>({
         resolver: zodResolver(scheduleFormSchema),
@@ -43,13 +44,14 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
     const groupedAvailabilities = Object.groupBy(availibilityFields.map((field, index) => ({ ...field, index })), availibility => availibility.dayOfWeek)
 
     async function onSubmit(values: z.infer<typeof scheduleFormSchema>) {
-        const action = event == null ? createEvent : updateEvent.bind(null, event.id)
-        const data = await action(values);
+        const data = await saveSchedule(values);
 
         if (data?.error) {
             form.setError("root", {
-                message: "There was an error saving the event"
+                message: "There was an error saving your schedule"
             })
+        } else {
+            setSuccessMessage("Schedule saved successfully!");
         }
     }
 
@@ -60,6 +62,9 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                     <div className="text-destructive text-sm">
                         {form.formState.errors.root.message}
                     </div>
+                )}
+                {successMessage && (
+                    <div className="text-green-500 text-sm">{successMessage}</div>
                 )}
                 <FormField
                     control={form.control}
@@ -99,7 +104,7 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                                             addAvailability({
                                                 dayOfWeek, startTime: "09:00", endTime: "17:00",
                                             })
-                                         }}
+                                        }}
                                     >
                                         <Plus className="size-full" />
                                     </Button>
@@ -117,6 +122,7 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                                                         </FormItem>
                                                     )}
                                                 />
+                                                -
                                                 <FormField
                                                     control={form.control}
                                                     name={`availabilities.${field.index}.endTime`}
@@ -128,15 +134,32 @@ export default function ScheduleForm({ schedule }: { schedule?: ScheduleType }) 
                                                         </FormItem>
                                                     )}
                                                 />
+                                                <Button type="button" className="size-5 p-1" variant={"destructiveGhost"}
+                                                    onClick={() => removeAvailability(field.index)}
+                                                >
+                                                    <X />
+                                                </Button>
                                             </div>
                                             <FormMessage>
-                                                {form.formState.errors.availabilities?.at?.(field.index)?.root?.message}
+                                                {
+                                                    form.formState.errors.availabilities?.at?.(
+                                                        field.index
+                                                    )?.root?.message
+                                                }
                                             </FormMessage>
                                             <FormMessage>
-                                                {form.formState.errors.availabilities?.at?.(field.index)?.startTime?.message}
+                                                {
+                                                    form.formState.errors.availabilities?.at?.(
+                                                        field.index
+                                                    )?.startTime?.message
+                                                }
                                             </FormMessage>
                                             <FormMessage>
-                                                {form.formState.errors.availabilities?.at?.(field.index)?.endTime?.message}
+                                                {
+                                                    form.formState.errors.availabilities?.at?.(
+                                                        field.index
+                                                    )?.endTime?.message
+                                                }
                                             </FormMessage>
                                         </div>
                                     ))}
